@@ -1,0 +1,12 @@
+from distutils.core import setup
+
+setup(
+    name='irext',
+    version='1.0.0',
+    packages=['main', 'classify'],
+    url='',
+    license='',
+    author='team7',
+    author_email='',
+    description='Information Retrieval Tool for Classification'
+)
