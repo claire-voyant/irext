@@ -1,6 +1,5 @@
 # Preliminary testing
 import cbor
-from IPython.display import display
 
 
 def read_bson_file(f):
