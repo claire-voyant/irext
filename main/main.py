@@ -27,6 +27,16 @@ def print_data():
                      for elem in p.bodies]
             print(' '.join(texts))
 
+            entities = [elem.page
+                        for elem in p.bodies
+                        if isinstance(elem, ParaLink)]
+            print(entities)
+
+            mixed = [(elem.anchor_text, elem.page) if isinstance(elem, ParaLink)
+                     else (elem.text, None)
+                     for elem in p.bodies]
+            print(mixed)
+
 
 if __name__ == "__main__":
     print("Running IR-Ext...")
