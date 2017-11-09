@@ -1,43 +1,93 @@
-import classify.prelim
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.feature_extraction.text import TfidfTransformer
 import sys
 from trec_car.read_data import *
+import itertools
+import re
+import pandas as pd
 
-
-def print_data():
-    if len(sys.argv) < 4:
-        print("usage ", sys.argv[0], " articleFile outlineFile paragraphFile")
-    classify.prelim.do_classification()
+def process_data():
+    count = 0
+    cat_keys = dict()
+    keys_cats = dict()
+    train = dict()
+    test = dict()
+    if len(sys.argv) < 1:
+        print("usage ", sys.argv[0], " articleFile")
     with open(sys.argv[1], 'rb') as f:
-        for p in iter_annotations(f):
-            print('\npagename: ', p.page_name)
-            print('\npageid: ', p.page_id)
-            print('\nmeta: ', p.page_meta)
+        data_slice = itertools.islice(iter_annotations(f), 2000)
+        for p in data_slice:
+            saved_article = ""
+            for s in p.skeleton:
+                n_s = str(s)
+                if "Category" in n_s:
+                    f_s = n_s[n_s.find("Category"):]
+                    slice_f = f_s[:f_s.find("]")]
+                    cat_slice = slice_f[len("Category:"):]
+                    if "Category" not in cat_slice and "[" not in cat_slice:
+                        count = count + 1
+                        category = slice_f[len("Category:"):]
+                        if p.page_name not in cat_keys:
+                            cat_keys[category] = count
+                            keys_cats[count] = category
+                        if count % 10 == 0:
+                            test[p.page_name] = cat_keys[category]
+                        else:
+                            train[p.page_name] = cat_keys[category]
+    print(count, "data points")
+    return (train, test, keys_cats)
 
-    # with open(sys.argv[2], 'rb') as f:
-    #     for p in iter_annotations(f):
-    #         print('\npagename:', p.page_name)
-    #         for heading in p.outline():
-    #             print(heading)
 
-    # with open(sys.argv[3], 'rb') as f:
-    #     for p in iter_paragraphs(f):
-    #         print('\n', p.para_id, ':')
-    #         texts = [elem.text if isinstance(elem, ParaText)
-    #                  else elem.anchor_text
-    #                  for elem in p.bodies]
-    #         print(' '.join(texts))
-    #
-    #         entities = [elem.page
-    #                     for elem in p.bodies
-    #                     if isinstance(elem, ParaLink)]
-    #         print(entities)
-    #
-    #         mixed = [(elem.anchor_text, elem.page) if isinstance(elem, ParaLink)
-    #                  else (elem.text, None)
-    #                  for elem in p.bodies]
-    #         print(mixed)
+def dict_to_df(data):
+    df = pd.DataFrame(list(data.items()))
+    return df
 
 
 if __name__ == "__main__":
     print("Running IR-Ext...")
-    print_data()
+
+    (train, test, cat_map) = process_data()
+    train_df = dict_to_df(train)
+    test_df = dict_to_df(test)
+
+    print(train_df.ix[:,0])
+
+    count_vect = CountVectorizer()
+    X_train_counts = count_vect.fit_transform(train_df.ix[:,0])
+    print(X_train_counts)
+    X_train_counts.shape
+    print(count_vect.vocabulary_.get(u'algorithm'))
+
+    tf_transformer = TfidfTransformer(use_idf=False).fit(X_train_counts)
+    X_train_tf = tf_transformer.transform(X_train_counts)
+    X_train_tf.shape
+
+    tfidf_transformer = TfidfTransformer()
+    X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
+    X_train_tfidf.shape
+
+    clf = MultinomialNB().fit(X_train_counts, train_df.ix[:,1])
+    
+    X_new_counts = count_vect.transform(test_df.ix[:,0])
+
+    predicted = clf.predict(X_new_counts)
+
+    correct = 0.0
+    number = 0.0
+
+    for doc,category in zip(test_df.ix[:,1], predicted):
+        print("%s => %s" % (cat_map[doc], cat_map[category]))
+        if cat_map[doc] == cat_map[category]:
+            correct = correct + 1.0
+        number = number + 1.0
+
+    print("Accuracy:",float(correct/number))
+
+
+    
+
+    
+
+
