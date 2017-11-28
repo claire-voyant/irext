@@ -76,9 +76,14 @@ def process_data():
     print(points, "data points")
     return (train, test, keys_cats)
 
+
 def take(n, iterable):
     "Return first n items of an iterable given as a list"
     return list(islice(iterable, n))
+
+def tuple_list_to_df(data):
+    df = pd.DataFrame(data)
+    return df
 
 def dict_to_df(data):
     df = pd.DataFrame(list(data.items()))
@@ -95,8 +100,8 @@ def evaluate_accuracy(test_df, predicted, cat_map, format_string = ""):
         number = number + 1.0
     print(format_string, " Accuracy:",float(correct/number))
 
-def learn_top_k_categories(k = 10):
-    (train, test, cat_map) = process_data()
+
+def learn_top_k_categories(train, test, cat_map, k = 10):
     # keep a dictionary of counts for the category
     # 10,000 is an estimate of how many categories 
     category_counts = dict()
@@ -129,12 +134,22 @@ def learn_top_k_categories(k = 10):
     return top_k
 
 def create_tuples_from_cats(top_k_cats, train, test):
-    # TODO implement this should return a list of
-    # tuples for both test and training which contains
+    # return a list of tuples
+    # for both test and training which contains
     # (page_name, category) entries for ONLY those categories
     # in top_k_cats list, lists SHOULD repeat page_name if it
     # has multiple top categories in its category list!
-    return ([], [])
+    t_train = list()
+    t_test = list()
+    for (page_name, category_list) in train.items():
+        for category in category_list:
+            if category in top_k_cats:
+                t_train.append((page_name, category))
+    for (page_name, category_list) in test.items():
+        for category in category_list:
+            if category in top_k_cats:
+                t_test.append((page_name, category))
+    return (t_train, t_test)
 
 
 if __name__ == "__main__":
@@ -156,36 +171,42 @@ if __name__ == "__main__":
                         ('clf-svm', SGDClassifier(loss='hinge', penalty='l2',
                             alpha=1e-3, max_iter=1000, tol=1e-3, random_state=42)),])
 
+    # initial read of the data to be processed
+    (train, test, cat_map) = process_data()
+
     # retrieve the top k categories
     # from the test and training data
-    top_k_cats = learn_top_k_categories()
-
-    # TODO create a dataframe with only the top categories
-    (train, test, cat_map) = process_data()
+    top_k_cats = learn_top_k_categories(train, test, cat_map)
 
     # create list of tuples using only top k categories
     (t_train, t_test) = create_tuples_from_cats(top_k_cats, train, test)
+    print(str(len(t_train)) + " training data points")
+    # print(t_train)
+    # print("************************************************************")
+    print(str(len(t_test)) + " testing data points")
+    # print(t_test)
 
-    train_df = dict_to_df(t_train)
-    test_df = dict_to_df(t_test)
+    # create a dataframe with only the top categories
+    train_df = tuple_list_to_df(t_train)
+    test_df = tuple_list_to_df(t_test)
 
-    #print(train_df.ix[:,0])
+    # print(train_df.ix[:,0])
 
     count_vect = CountVectorizer()
     X_train_counts = count_vect.fit_transform(train_df.ix[:,0])
-    #print(X_train_counts)
-    print("Count matrix...")
+    # print(X_train_counts)
+    # print("Count matrix...")
     X_train_counts.shape
-    #print(count_vect.vocabulary_.get(u'algorithm'))
+    # print(count_vect.vocabulary_.get(u'algorithm'))
 
     tf_transformer = TfidfTransformer(use_idf=False).fit(X_train_counts)
     X_train_tf = tf_transformer.transform(X_train_counts)
-    print("TF matrix...")
+    # print("TF matrix...")
     X_train_tf.shape
 
     tfidf_transformer = TfidfTransformer()
     X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
-    print("TFIDF matrix...")
+    # print("TFIDF matrix...")
     X_train_tfidf.shape
 
     # count matrix MBayes
@@ -201,14 +222,11 @@ if __name__ == "__main__":
     predicted = clf.predict(X_new_counts)
     ipredicted = iclf.predict(X_new_counts)
 
-    evaluate_accuracy(test_df, predicted, cat_map, format_string = "Count vector")
-    evaluate_accuracy(test_df, ipredicted, cat_map, format_string = "TFIDF vector")
-
     predicted = text_clf.predict(test_df.ix[:,0])
-    evaluate_accuracy(test_df, predicted, cat_map, format_string = "Pipeline vector")
+    evaluate_accuracy(test_df, predicted, cat_map, format_string = "Naive Bayes")
 
     predicted = text_clf_svm.predict(test_df.ix[:,0])
-    evaluate_accuracy(test_df, predicted, cat_map, format_string = "SVM TFIDF vector")
+    evaluate_accuracy(test_df, predicted, cat_map, format_string = "SVM")
     
     gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1, cv=2)
     gs_clf = gs_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
