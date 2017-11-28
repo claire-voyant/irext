@@ -14,30 +14,52 @@ def process_data():
     keys_cats = dict()
     train = dict()
     test = dict()
-    if len(sys.argv) < 1:
+    trainTest = 0
+    if len(sys.argv) < 2:
         print("usage ", sys.argv[0], " articleFile")
+    # Open the unprocessed wiki text
     with open(sys.argv[1], 'rb') as f:
-        data_slice = itertools.islice(iter_annotations(f), 2000)
-        for p in data_slice:
-            saved_article = ""
-            for s in p.skeleton:
-                n_s = str(s)
-                if "Category" in n_s:
-                    f_s = n_s[n_s.find("Category"):]
-                    slice_f = f_s[:f_s.find("]")]
-                    cat_slice = slice_f[len("Category:"):]
-                    if "Category" not in cat_slice and "[" not in cat_slice:
-                        count = count + 1
-                        category = slice_f[len("Category:"):]
-                        if p.page_name not in cat_keys:
-                            cat_keys[category] = count
-                            keys_cats[count] = category
-                        if count % 10 == 0:
-                            test[p.page_name] = cat_keys[category]
-                        else:
-                            train[p.page_name] = cat_keys[category]
+        # Loop over the first 100,000 wiki articles
+        for p in itertools.islice(iter_annotations(f), 100000):
+            # Ensure the wiki article has sections on the page
+            if len(p.flat_headings_list()) > 0:
+                # Go to the last section of the page
+                section = p.flat_headings_list()[-1]
+                # Ensure the last section has at least on paragraph
+                if len(section[0].children) > 0:
+                    categorySection = section[0].children[-1]
+                    # Ensure the type of child is a paragraph, not a subsection
+                    if type(categorySection) == Para:
+                        # Split the paragraph by ') ', essentially splitting the category links for this page
+                        if ') ' in str(categorySection):
+                            links = str(categorySection).split(") ")
+                            # Loop over each category link
+                            for link in links:
+                                # Split the category link and name
+                                if (len(link.split('](')) > 1):
+                                    link = link.split('](')[1]
+                                    # Cleaning of category name due to splitting
+                                    if ')' in link and '(' not in link:
+                                        link = link.replace(')', '')
+                                    if '))' in link:
+                                        link = link.replace('))', ')')
+                                    if '(' in link and ')' not in link:
+                                        link = link + ')'
+                                    # If this is a category, grab it
+                                    if 'Category:' in link:
+                                        category = link.replace('Category:', '')
+                                        print(p.page_name + ": " + category)
+                                        print('\n')
+                                        if category not in cat_keys:
+                                            count = count + 1
+                                            cat_keys[category] = count
+                                            keys_cats[count] = category
+                                        if trainTest % 10 == 0:
+                                            test[p.page_name]
+                                        
+
     print(count, "data points")
-    return (train, test, keys_cats)
+    #return (train, test, keys_cats)
 
 
 def dict_to_df(data):
