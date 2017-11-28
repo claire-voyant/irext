@@ -1,4 +1,5 @@
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.pipeline import Pipeline
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -39,7 +40,6 @@ def process_data():
     print(count, "data points")
     return (train, test, keys_cats)
 
-
 def dict_to_df(data):
     df = pd.DataFrame(list(data.items()))
     return df
@@ -52,37 +52,67 @@ if __name__ == "__main__":
     train_df = dict_to_df(train)
     test_df = dict_to_df(test)
 
-    print(train_df.ix[:,0])
+    #print(train_df.ix[:,0])
 
     count_vect = CountVectorizer()
     X_train_counts = count_vect.fit_transform(train_df.ix[:,0])
-    print(X_train_counts)
+    #print(X_train_counts)
+    print("Count matrix...")
     X_train_counts.shape
-    print(count_vect.vocabulary_.get(u'algorithm'))
+    #print(count_vect.vocabulary_.get(u'algorithm'))
 
     tf_transformer = TfidfTransformer(use_idf=False).fit(X_train_counts)
     X_train_tf = tf_transformer.transform(X_train_counts)
+    print("TF matrix...")
     X_train_tf.shape
 
     tfidf_transformer = TfidfTransformer()
     X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
+    print("TFIDF matrix...")
     X_train_tfidf.shape
 
+    # count vector MBayes
     clf = MultinomialNB().fit(X_train_counts, train_df.ix[:,1])
+
+    # tfidf matrix MBayes
+    iclf = MultinomialNB().fit(X_train_tfidf, train_df.ix[:,1])
+
+    text_clf = Pipeline([('vect', CountVectorizer()),
+                        ('tfidf', TfidfTransformer()),
+                        ('clf', MultinomialNB()),])
     
     X_new_counts = count_vect.transform(test_df.ix[:,0])
 
     predicted = clf.predict(X_new_counts)
+    ipredicted = iclf.predict(X_new_counts)
 
     correct = 0.0
     number = 0.0
 
+    icorrect = 0.0
+    inumber = 0.0
+
     for doc,category in zip(test_df.ix[:,1], predicted):
-        print("%s => %s" % (cat_map[doc], cat_map[category]))
+        #print("%s => %s" % (cat_map[doc], cat_map[category]))
         if cat_map[doc] == cat_map[category]:
             correct = correct + 1.0
         number = number + 1.0
 
+    for doc,category in zip(test_df.ix[:,1], ipredicted):
+        if cat_map[doc] == cat_map[category]:
+            icorrect = icorrect + 1.0
+        inumber = inumber + 1.0
+
+    print("Accuracy:",float(correct/number))
+    print("iAccuracy:", float(icorrect/inumber))
+
+def evaluate_accuracy(predicted, cat_map):
+    correct = 0.0
+    number = 0.0
+    for doc,category in zip(test_df.ix[:,1], predicted):
+        if cat_map[doc] == cat_map[category]:
+            correct = correct + 1.0
+        number = number + 1.0
     print("Accuracy:",float(correct/number))
 
 
