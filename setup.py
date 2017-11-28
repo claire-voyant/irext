@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='irext',
     version='1.0.0',
-    packages=['main', 'classify'],
+    packages=['classify'],
     url='',
     license='',
     author='team7',
