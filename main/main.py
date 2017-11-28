@@ -5,12 +5,14 @@ from sklearn.pipeline import Pipeline
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import TfidfTransformer
-import sys
 from trec_car.read_data import *
+from itertools import islice
+import sys
 import itertools
 import re
 import pandas as pd
 import numpy as np
+import operator
 
 def process_data():
     count = 0
@@ -25,7 +27,7 @@ def process_data():
     # Open the unprocessed wiki text
     with open(sys.argv[1], 'rb') as f:
        # Loop over the first 100,000 wiki articles
-        for p in itertools.islice(iter_annotations(f), 500):
+        for p in itertools.islice(iter_annotations(f), 20000):
             categorySet = set()
             # Ensure the wiki article has sections on the page
             if len(p.flat_headings_list()) > 0:
@@ -74,6 +76,10 @@ def process_data():
     print(points, "data points")
     return (train, test, keys_cats)
 
+def take(n, iterable):
+    "Return first n items of an iterable given as a list"
+    return list(islice(iterable, n))
+
 def dict_to_df(data):
     df = pd.DataFrame(list(data.items()))
     #print(df)
@@ -89,26 +95,79 @@ def evaluate_accuracy(test_df, predicted, cat_map, format_string = ""):
         number = number + 1.0
     print(format_string, " Accuracy:",float(correct/number))
 
+def learn_top_k_categories(k = 10):
+    (train, test, cat_map) = process_data()
+    # keep a dictionary of counts for the category
+    # 10,000 is an estimate of how many categories 
+    category_counts = dict()
+    for i in range(0,100000):
+        # initialize them all to begin at count zero
+        category_counts[i] = 0
+    # iterate over the training set and count the categories
+    for (page_name, categories) in train.items():
+        for category in categories:
+            category_counts[category] = category_counts[category] + 1
+    # iterate over the test set and count the categories
+    for (page_name, categories) in test.items():
+        for category in categories: 
+            category_counts[category] = category_counts[category] + 1
+    # create a set for the top k categories
+    top_k = set()
+    # go through the category counts and find those which have
+    # more than 20 data points, estimate can be changed
+    for (category, count) in category_counts.items():
+        if count > 20:
+            if len(top_k) >= k:
+                top_k_copy = top_k.copy()
+                for cat in top_k_copy:
+                    if category_counts[cat] < count:
+                        top_k.remove(cat)
+                        top_k.add(category)
+            else:
+                top_k.add(category)
+    print("Top " + str(len(top_k)) + " categories retrieved!")
+    return top_k
+
+def create_tuples_from_cats(top_k_cats, train, test):
+    # TODO implement this should return a list of
+    # tuples for both test and training which contains
+    # (page_name, category) entries for ONLY those categories
+    # in top_k_cats list, lists SHOULD repeat page_name if it
+    # has multiple top categories in its category list!
+    return ([], [])
+
 
 if __name__ == "__main__":
     print("Running IR-Ext...")
 
+    # various parameters to be searched over for optimization
     parameters = {'vect__ngram_range': [(1,1), (1,2)],
                 'tfidf__use_idf': (True, False),
                 'clf__alpha': (1e-2, 1e-3),}
 
+    # Naive Bayes pipeline for evaluation
     text_clf = Pipeline([('vect', CountVectorizer()),
                         ('tfidf', TfidfTransformer()),
                         ('clf', MultinomialNB()),])
 
+    # SVM (gradient descent) pipeline for evaluation
     text_clf_svm = Pipeline([('vect', CountVectorizer()),
                         ('tfidf', TfidfTransformer()),
                         ('clf-svm', SGDClassifier(loss='hinge', penalty='l2',
                             alpha=1e-3, max_iter=1000, tol=1e-3, random_state=42)),])
 
+    # retrieve the top k categories
+    # from the test and training data
+    top_k_cats = learn_top_k_categories()
+
+    # TODO create a dataframe with only the top categories
     (train, test, cat_map) = process_data()
-    train_df = dict_to_df(train)
-    test_df = dict_to_df(test)
+
+    # create list of tuples using only top k categories
+    (t_train, t_test) = create_tuples_from_cats(top_k_cats, train, test)
+
+    train_df = dict_to_df(t_train)
+    test_df = dict_to_df(t_test)
 
     #print(train_df.ix[:,0])
 
