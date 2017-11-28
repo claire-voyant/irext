@@ -11,6 +11,7 @@ import pandas as pd
 
 def process_data():
     count = 0
+    points = 0
     cat_keys = dict()
     keys_cats = dict()
     train = dict()
@@ -21,7 +22,8 @@ def process_data():
     # Open the unprocessed wiki text
     with open(sys.argv[1], 'rb') as f:
         # Loop over the first 100,000 wiki articles
-        for p in itertools.islice(iter_annotations(f), 100000):
+        for p in itertools.islice(iter_annotations(f), 500):
+            categorySet = set()
             # Ensure the wiki article has sections on the page
             if len(p.flat_headings_list()) > 0:
                 # Go to the last section of the page
@@ -49,21 +51,29 @@ def process_data():
                                     # If this is a category, grab it
                                     if 'Category:' in link:
                                         category = link.replace('Category:', '')
-                                        print(p.page_name + ": " + category)
-                                        print('\n')
+                                        #print(p.page_name + ": " + category)
+                                        #print('\n')
                                         if category not in cat_keys:
                                             count = count + 1
                                             cat_keys[category] = count
                                             keys_cats[count] = category
-                                        if trainTest % 10 == 0:
-                                            test[p.page_name]
+                                        # Add the category to the set for this page
+                                        categorySet.add(cat_keys[category])
+            if len(categorySet) > 0:
+                points += len(categorySet)
+                if trainTest % 2 == 0:
+                    train[p.page_name] = categorySet
+                else:
+                    test[p.page_name] = categorySet
+                trainTest += 1
                                         
 
-    print(count, "data points")
-    #return (train, test, keys_cats)
+    print(points, "data points")
+    return (train, test, keys_cats)
 
 def dict_to_df(data):
     df = pd.DataFrame(list(data.items()))
+    #print(df)
     return df
 
 
