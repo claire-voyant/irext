@@ -45,6 +45,16 @@ def dict_to_df(data):
     return df
 
 
+def evaluate_accuracy(test_df, predicted, cat_map):
+    correct = 0.0
+    number = 0.0
+    for doc,category in zip(test_df.ix[:,1], predicted):
+        if cat_map[doc] == cat_map[category]:
+            correct = correct + 1.0
+        number = number + 1.0
+    print("Accuracy:",float(correct/number))
+
+
 if __name__ == "__main__":
     print("Running IR-Ext...")
 
@@ -86,38 +96,6 @@ if __name__ == "__main__":
     predicted = clf.predict(X_new_counts)
     ipredicted = iclf.predict(X_new_counts)
 
-    correct = 0.0
-    number = 0.0
-
-    icorrect = 0.0
-    inumber = 0.0
-
-    for doc,category in zip(test_df.ix[:,1], predicted):
-        #print("%s => %s" % (cat_map[doc], cat_map[category]))
-        if cat_map[doc] == cat_map[category]:
-            correct = correct + 1.0
-        number = number + 1.0
-
-    for doc,category in zip(test_df.ix[:,1], ipredicted):
-        if cat_map[doc] == cat_map[category]:
-            icorrect = icorrect + 1.0
-        inumber = inumber + 1.0
-
-    print("Accuracy:",float(correct/number))
-    print("iAccuracy:", float(icorrect/inumber))
-
-def evaluate_accuracy(predicted, cat_map):
-    correct = 0.0
-    number = 0.0
-    for doc,category in zip(test_df.ix[:,1], predicted):
-        if cat_map[doc] == cat_map[category]:
-            correct = correct + 1.0
-        number = number + 1.0
-    print("Accuracy:",float(correct/number))
-
-
-    
-
-    
-
+    evaluate_accuracy(test_df, predicted, cat_map)
+    evaluate_accuracy(test_df, ipredicted, cat_map)
 
