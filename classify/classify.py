@@ -11,7 +11,7 @@ def run_naive_bayes(train_df, test_df, cat_map):
     # various parameters to be searched over for optimization
     parameters = {'vect__ngram_range': [(1,1), (1,2)],
                 'tfidf__use_idf': (True, False),
-                'clf__alpha': (1e-2, 1e-3),}
+                'clf__alpha': (1e0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5),}
 
     # Naive Bayes pipeline for evaluation
     text_clf = Pipeline([('vect', CountVectorizer()),
@@ -21,9 +21,19 @@ def run_naive_bayes(train_df, test_df, cat_map):
     text_clf = text_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
     predicted = text_clf.predict(test_df.ix[:,0])
     evaluate_accuracy(test_df, predicted, cat_map, format_string = "Naive Bayes")
+    print("Searching over parameters for optimization...")
+    gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
+    gs_clf = gs_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
+    print("Score: " + str(gs_clf.best_score_))
+    print("Params Chosen: " + str(gs_clf.best_params_))
 
 
 def run_svm(train_df, test_df, cat_map):
+    #various parameters to be searched over for optimization
+    parameters = {'vect__ngram_range':[(1,1), (1,2)],
+                'tfidf__use_idf': (True, False),
+                'clf-svm__alpha':(1e0, 1e-1, 1e-2, 1e-4, 1e-5),}
+
     # SVM (gradient descent) pipeline for evaluation
     text_clf_svm = Pipeline([('vect', CountVectorizer()),
                         ('tfidf', TfidfTransformer()),
@@ -34,10 +44,19 @@ def run_svm(train_df, test_df, cat_map):
     predicted = text_clf_svm.predict(test_df.ix[:,0])
     evaluate_accuracy(test_df, predicted, cat_map, format_string = "SVM")
 
+    print("Searching over parameters for optimization...")
+    gs_clf = GridSearchCV(text_clf_svm, parameters, n_jobs=-1)
+    gs_clf = gs_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
+    print("Score: " + str(gs_clf.best_score_))
+    print("Params Chosen: " + str(gs_clf.best_params_))
+
+
 
 def evaluate_accuracy(test_df, predicted, cat_map, format_string =""):
+    # calculate simple accuracy of the given predictions
     correct = 0.0
     number = 0.0
+    # for each of the 
     for doc,category in zip(test_df.ix[:,1], predicted):
         if cat_map[doc] == cat_map[category]:
             correct = correct + 1.0
