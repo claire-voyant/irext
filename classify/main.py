@@ -72,6 +72,8 @@ if __name__ == "__main__":
     # predicted = clf.predict(X_new_counts)
     # ipredicted = iclf.predict(X_new_counts)
 
+    run_ec(train_df, test_df, cat_map)
+    exit() 
     run_naive_bayes(train_df, test_df, cat_map)
     run_svm(train_df, test_df, cat_map)
     run_multi_svm(train_df, test_df, cat_map)

@@ -10,6 +10,15 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.svm import LinearSVC
 
+def run_ec(train_df, test_df, cat_map):
+    count_vect = CountVectorizer()
+    X_train_counts = count_vect.fit_transform(train_df.ix[:,0])
+    X_train_counts.shape
+    tfidf_transformer = TfidfTransformer()
+    X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
+    X_train_tfidf.shape
+    print(X_train_tfidf)
+
 def run_naive_bayes(train_df, test_df, cat_map):
     # various parameters to be searched over for optimization
     parameters = {'vect__ngram_range': [(1,1), (1,2)],
