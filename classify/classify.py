@@ -6,6 +6,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.model_selection import cross_val_score
+from sklearn.svm import LinearSVC
 
 def run_naive_bayes(train_df, test_df, cat_map):
     # various parameters to be searched over for optimization
@@ -20,12 +23,60 @@ def run_naive_bayes(train_df, test_df, cat_map):
 
     text_clf = text_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
     predicted = text_clf.predict(test_df.ix[:,0])
-    evaluate_accuracy(test_df, predicted, cat_map, format_string = "Naive Bayes")
+    # evaluate_accuracy(test_df, predicted, cat_map, format_string = "Naive Bayes")
     print("Searching over parameters for optimization...")
     gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
     gs_clf = gs_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
-    print("Score: " + str(gs_clf.best_score_))
-    print("Params Chosen: " + str(gs_clf.best_params_))
+    # print("Naive Bayes Score: " + str(gs_clf.best_score_))
+    # print("Params Chosen: " + str(gs_clf.best_params_))
+    scores = cross_val_score(gs_clf, test_df.ix[:,0], test_df.ix[:,1], cv=10)
+    print("Naive Bayes Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+def run_multi_naive_bayes(train_df, test_df, cat_map):
+    # various parameters to be searched over for optimization
+    parameters = {'vect__ngram_range': [(1,1), (1,2)],
+            'tfidf__use_idf': (True, False)}
+
+    # multi-class Naive Bayes pipeline
+    text_clf = Pipeline([('vect', CountVectorizer()),
+                        ('tfidf', TfidfTransformer()),
+                        ('clf', OneVsRestClassifier(MultinomialNB())),])
+
+    text_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
+    predicted = text_clf.predict(test_df.ix[:,0])
+    # evaluate_accuracy(test_df, predicted, cat_map, format_string = "Multi-Naive Bayes")
+
+    # print("Searching over parameters for optimization...")
+    gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
+    gs_clf = gs_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
+    # print("Multi-Naive Bayes Score: " + str(gs_clf.best_score_))
+    # print("Params Chosen: " + str(gs_clf.best_params_))
+    scores = cross_val_score(gs_clf, test_df.ix[:,0], test_df.ix[:,1], cv=10)
+    print("Multi Naive Bayes Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+
+def run_multi_svm(train_df, test_df, cat_map):
+    # various parameters to be searched over for optimization
+    parameters = {'vect__ngram_range':[(1,1), (1,2)],
+                'tfidf__use_idf': (True, False),}
+
+    # multi-class SVM pipeline
+    text_clf = Pipeline([('vect', CountVectorizer()),
+                        ('tfidf', TfidfTransformer()),
+                        ('clf', OneVsRestClassifier(LinearSVC(loss='hinge', penalty='l2',
+                            tol=1e-3, random_state=42, max_iter=1000)))])
+
+    text_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
+    predicted = text_clf.predict(test_df.ix[:,0])
+    # evaluate_accuracy(test_df, predicted, cat_map, format_string = "Multi-SVM")
+
+    # print("Searching over parameters for optimization...")
+    gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
+    gs_clf = gs_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
+    # print("Multi-SVM Score: " + str(gs_clf.best_score_))
+    # print("Params Chosen: " + str(gs_clf.best_params_))
+    scores = cross_val_score(gs_clf, test_df.ix[:,0], test_df.ix[:,1], cv=10)
+    print("Mutli SVM Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 
 
 def run_svm(train_df, test_df, cat_map):
@@ -44,12 +95,13 @@ def run_svm(train_df, test_df, cat_map):
     predicted = text_clf_svm.predict(test_df.ix[:,0])
     evaluate_accuracy(test_df, predicted, cat_map, format_string = "SVM")
 
-    print("Searching over parameters for optimization...")
+    # print("Searching over parameters for optimization...")
     gs_clf = GridSearchCV(text_clf_svm, parameters, n_jobs=-1)
     gs_clf = gs_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
-    print("Score: " + str(gs_clf.best_score_))
-    print("Params Chosen: " + str(gs_clf.best_params_))
-
+    # print("SVM Score: " + str(gs_clf.best_score_))
+    # print("Params Chosen: " + str(gs_clf.best_params_))
+    scores = cross_val_score(gs_clf, test_df.ix[:,0], test_df.ix[:,1], cv=10)
+    print("SVM Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 
 
 def evaluate_accuracy(test_df, predicted, cat_map, format_string =""):

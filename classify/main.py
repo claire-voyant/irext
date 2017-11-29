@@ -61,6 +61,8 @@ if __name__ == "__main__":
 
     run_naive_bayes(train_df, test_df, cat_map)
     run_svm(train_df, test_df, cat_map)
+    run_multi_svm(train_df, test_df, cat_map)
+    run_multi_naive_bayes(train_df, test_df, cat_map)
 
     # gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1, cv=2)
     # gs_clf = gs_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
