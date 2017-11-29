@@ -6,12 +6,25 @@ import re
 import pandas as pd
 import numpy as np
 import operator
+import argparse
 
 if __name__ == "__main__":
     print("Running IR-Ext...")
 
+    parser = argparse.ArgumentParser(description='Evaluating Category Classification in Information Retrieval')
+    parser.add_argument('datafile', metavar='datafile', type=str, nargs='+',
+            help='the unprocessed cbor data file for Wikipedia pages')
+    parser.add_argument("--samples", help="number of samples to pull from the dataset")
+    args = parser.parse_args()
+
+    n_samples = 20000
+
+    if args.samples is not None:
+        n_samples = int(args.samples)
+
+    print("Using %d samples from the data!" % n_samples)
     # initial read of the data to be processed
-    (train, test, cat_map) = process_data(sys.argv[1])
+    (train, test, cat_map) = process_data(args.datafile[0], data_samples = n_samples)
 
     # retrieve the top k categories
     # from the test and training data

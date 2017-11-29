@@ -93,7 +93,7 @@ def run_svm(train_df, test_df, cat_map):
 
     text_clf_svm.fit(train_df.ix[:,0], train_df.ix[:,1])
     predicted = text_clf_svm.predict(test_df.ix[:,0])
-    evaluate_accuracy(test_df, predicted, cat_map, format_string = "SVM")
+    # evaluate_accuracy(test_df, predicted, cat_map, format_string = "SVM")
 
     # print("Searching over parameters for optimization...")
     gs_clf = GridSearchCV(text_clf_svm, parameters, n_jobs=-1)
@@ -119,7 +119,7 @@ def learn_top_k_categories(train, test, cat_map, k = 10):
     # keep a dictionary of counts for the category
     # 10,000 is an estimate of how many categories 
     category_counts = dict()
-    for i in range(0,100000):
+    for i in range(0,1000000):
         # initialize them all to begin at count zero
         category_counts[i] = 0
     # iterate over the training set and count the categories

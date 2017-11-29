@@ -2,7 +2,7 @@
 from trec_car.read_data import *
 from itertools import islice
 
-def process_data(file_location):
+def process_data(file_location, data_samples = 20000):
     count = 0
     points = 0
     cat_keys = dict()
@@ -13,7 +13,7 @@ def process_data(file_location):
     # Open the unprocessed wiki text
     with open(file_location, 'rb') as f:
        # Loop over the first 100,000 wiki articles
-        for p in itertools.islice(iter_annotations(f), 20000):
+        for p in itertools.islice(iter_annotations(f), data_samples):
             categorySet = set()
             # Ensure the wiki article has sections on the page
             if len(p.flat_headings_list()) > 0:
