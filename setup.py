@@ -8,5 +8,5 @@ setup(
     license='',
     author='team7',
     author_email='',
-    description='Information Retrieval Tool for Classification', requires=['cbor']
+    description='Information Retrieval Tool for Classification', requires=['cbor', 'sklearn', 'IPython', 'pandas', 'numpy', 'trec_car']
 )
