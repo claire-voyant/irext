@@ -1,4 +1,7 @@
 # Functions which deal with classification and evaluation
+from IPython.display import display
+from sklearn.svm import SVC
+from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import SGDClassifier
@@ -10,14 +13,60 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.svm import LinearSVC
 
+def calculate_category_probability(train_df, cat_map, number_of_cats = 25):
+    # map ['category'] => probability
+    cat_probs = dict()
+    # estimate the number of categories initialize the dict
+    for i in range(0,1000000):
+        # initialize them to be at count zero
+        cat_probs[i] = 1.0
+    # go through the training set keep track of counts
+    for category in train_df.ix[:,1]:
+        cat_probs[category] = cat_probs[category] + 1
+    # now we take a naive approach and divide by number of
+    # categories to get a probability of pulling the specific category
+    for i in range(0,1000000):
+        # if it isn't the intialized value then we have a valid
+        # probability to use during the training of the vectors
+        if cat_probs[i] != 1.0:
+            cat_probs[i] = float(cat_probs[i] / float(number_of_cats))
+    return cat_probs
+
+
 def run_ec(train_df, test_df, cat_map):
+    # various parameters to be searched over for optimization
+    parameters = {'vect__ngram_range': [(1,1), (1,2)],
+                'tfidf__use_idf': (True, False),}
+
+    # ec pipeline for evaluation
+    text_clf = Pipeline([('vect', CountVectorizer()),
+                        ('tfidf', TfidfTransformer()),
+                        ('clf', OneVsRestClassifier(SVC(kernel='linear'))),])
+
+    probabilities = calculate_category_probability(train_df, cat_map)
     count_vect = CountVectorizer()
     X_train_counts = count_vect.fit_transform(train_df.ix[:,0])
     X_train_counts.shape
     tfidf_transformer = TfidfTransformer()
     X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
     X_train_tfidf.shape
-    print(X_train_tfidf)
+    # calculate the eigen value decomposition 
+    pca = TruncatedSVD(algorithm='arpack', n_components=1, n_iter=7, random_state=42)
+    pca.fit(X_train_tfidf)
+    vari = pca.explained_variance_ratio_[0]
+    sing = pca.singular_values_[0]
+    text_clf = text_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
+    predicted = text_clf.predict(test_df.ix[:,0])
+    # evaluate_accuracy(test_df, predicted, cat_map, format_string = "EC")
+    print("Searching over parameters for optimization...")
+    gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
+    gs_clf = gs_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
+    # print("Naive Bayes Score: " + str(gs_clf.best_score_))
+    # print("Params Chosen: " + str(gs_clf.best_params_))
+    scores = cross_val_score(gs_clf, test_df.ix[:,0], test_df.ix[:,1], cv=10)
+    print("EC Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+
 
 def run_naive_bayes(train_df, test_df, cat_map):
     # various parameters to be searched over for optimization
@@ -124,7 +173,7 @@ def evaluate_accuracy(test_df, predicted, cat_map, format_string =""):
         number = number + 1.0
     print(format_string, " Accuracy:", float(correct/number))
 
-def learn_top_k_categories(train, test, cat_map, k = 10):
+def learn_top_k_categories(train, test, cat_map, k = 25):
     # keep a dictionary of counts for the category
     # 10,000 is an estimate of how many categories 
     category_counts = dict()
