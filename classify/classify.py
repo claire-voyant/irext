@@ -19,7 +19,7 @@ def run_ec(train_df, test_df, cat_map):
     X_train_tfidf.shape
     print(X_train_tfidf)
 
-def run_naive_bayes(train_df, test_df, cat_map):
+def run_naive_bayes(train_df, test_df, cat_map, traindata, testdata):
     # various parameters to be searched over for optimization
     parameters = {'vect__ngram_range': [(1,1), (1,2)],
                 'tfidf__use_idf': (True, False),
@@ -32,16 +32,18 @@ def run_naive_bayes(train_df, test_df, cat_map):
 
     text_clf = text_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
     predicted = text_clf.predict(test_df.ix[:,0])
+    
     # evaluate_accuracy(test_df, predicted, cat_map, format_string = "Naive Bayes")
     print("Searching over parameters for optimization...")
     gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
     gs_clf = gs_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
+    
     # print("Naive Bayes Score: " + str(gs_clf.best_score_))
     # print("Params Chosen: " + str(gs_clf.best_params_))
     scores = cross_val_score(gs_clf, test_df.ix[:,0], test_df.ix[:,1], cv=10)
     print("Naive Bayes Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 
-def run_multi_naive_bayes(train_df, test_df, cat_map):
+def run_multi_naive_bayes(train_df, test_df, cat_map, traindata, testdata):
     # various parameters to be searched over for optimization
     parameters = {'vect__ngram_range': [(1,1), (1,2)],
             'tfidf__use_idf': (True, False)}
@@ -64,7 +66,7 @@ def run_multi_naive_bayes(train_df, test_df, cat_map):
     print("Multi Naive Bayes Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 
 
-def run_multi_svm(train_df, test_df, cat_map):
+def run_multi_svm(train_df, test_df, cat_map, traindata, testdata):
     # various parameters to be searched over for optimization
     parameters = {'vect__ngram_range':[(1,1), (1,2)],
                 'tfidf__use_idf': (True, False),}
@@ -88,7 +90,7 @@ def run_multi_svm(train_df, test_df, cat_map):
     print("Mutli SVM Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 
 
-def run_svm(train_df, test_df, cat_map):
+def run_svm(train_df, test_df, cat_map, traindata, testdata):
     #various parameters to be searched over for optimization
     parameters = {'vect__ngram_range':[(1,1), (1,2)],
                 'tfidf__use_idf': (True, False),
