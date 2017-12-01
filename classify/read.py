@@ -9,12 +9,17 @@ def process_data(file_location, data_samples = 20000):
     keys_cats = dict()
     train = dict()
     test = dict()
+    traindata = list()
+    testdata = list()
     trainTest = 0
     # Open the unprocessed wiki text
     with open(file_location, 'rb') as f:
        # Loop over the first 100,000 wiki articles
         for p in itertools.islice(iter_annotations(f), data_samples):
             categorySet = set()
+            text = ''
+            for s in p.skeleton:
+                text += str(s)
             # Ensure the wiki article has sections on the page
             if len(p.flat_headings_list()) > 0:
                 # Go to the last section of the page
@@ -53,13 +58,15 @@ def process_data(file_location, data_samples = 20000):
             if len(categorySet) > 0:
                 points += len(categorySet)
                 if trainTest % 2 == 0:
-                    train[p.page_name] = categorySet
+                    train[text] = categorySet
+                    traindata.append(text)
                 else:
-                    test[p.page_name] = categorySet
+                    test[text] = categorySet
+                    testdata.append(text)
                 trainTest += 1
                                         
 
     print(points, "data points")
-    return (train, test, keys_cats)
+    return (train, test, keys_cats, traindata, testdata)
 
 

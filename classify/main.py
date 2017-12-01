@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     print("Using %d samples from the data!" % n_samples)
     # initial read of the data to be processed
-    (train, test, cat_map) = process_data(args.datafile[0], data_samples = n_samples)
+    (train, test, cat_map, traindata, testdata) = process_data(args.datafile[0], data_samples = n_samples)
 
     # retrieve the top k categories
     # from the test and training data
@@ -72,12 +72,13 @@ if __name__ == "__main__":
     # predicted = clf.predict(X_new_counts)
     # ipredicted = iclf.predict(X_new_counts)
 
-    # run_ec(train_df, test_df, cat_map)
-    run_naive_bayes(train_df, test_df, cat_map)
-    run_svm(train_df, test_df, cat_map)
-    run_multi_svm(train_df, test_df, cat_map)
-    run_multi_naive_bayes(train_df, test_df, cat_map)
-
+    run_ec(train_df, test_df, cat_map)
+    # exit() 
+    run_naive_bayes(train_df, test_df, cat_map, traindata, testdata)
+    run_svm(train_df, test_df, cat_map, traindata, testdata)
+    run_multi_svm(train_df, test_df, cat_map, traindata, testdata)
+    run_multi_naive_bayes(train_df, test_df, cat_map, traindata, testdata)
+    exit()
     # gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1, cv=2)
     # gs_clf = gs_clf.fit(train_df.ix[:,0], train_df.ix[:,1])
 
