@@ -8,10 +8,11 @@ script which runs the program.
 It requires one argument, the textfile, and has an optional argument for
 how much data you want to sample from the unprocessed Wikipedia pages.
 
-We use `python3` in our project.
+We use `python3` in our project, and assume you have installed the `trec_car` 
+tools from https://github.com/TREMA-UNH/trec-car-tools
 
-To install the required dependencies use the shell script provided, make
-sure you have `pip3` installed:
+To install the required dependencies use the shell script provided or the
+`setup.py` script`, make sure you have `pip3` installed:
 
 ```sudo sh install.sh```
 
