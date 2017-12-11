@@ -14,7 +14,7 @@ tools from:
 https://github.com/TREMA-UNH/trec-car-tools
 
 To install the required dependencies use the shell script provided or the
-`setup.py` script`, make sure you have `pip3` installed:
+`setup.py` script, make sure you have `pip3` installed:
 
 ```sudo sh install.sh```
 
